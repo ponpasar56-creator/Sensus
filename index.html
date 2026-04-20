@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Sensus Penduduk Modern | BPS Digital</title>
+  <!-- Font Awesome 6 (Free CDN) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Google Fonts: Poppins & Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js untuk visualisasi data (ringan & modern) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
+      color: #1a2c3e;
+      padding: 24px 20px;
+    }
+
+    /* container utama */
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* header modern dengan efek glass */
+    .header {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      padding: 1rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-area h1 {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1.7rem;
+      background: linear-gradient(135deg, #0b3954, #087e8b);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-area p {
+      font-size: 0.85rem;
+      color: #2c5a6e;
+      font-weight: 500;
+    }
+
+    .stats-badge {
+      background: #ffffffcc;
+      padding: 0.6rem 1.2rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #0f4c5f;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    /* layout grid: form + tabel */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 1.8rem;
+      margin-bottom: 2rem;
+    }
+
+    /* kartu modern */
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(4px);
+      border-radius: 1.8rem;
+      padding: 1.5rem 1.8rem;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(255,255,255,0.6);
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+    }
+
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      border-left: 5px solid #087e8b;
+      padding-left: 1rem;
+      color: #144d5c;
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      font-weight: 500;
+      display: block;
+      margin-bottom: 0.4rem;
+      font-size: 0.85rem;
+      color: #2c5a6e;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border-radius: 1.2rem;
+      border: 1px solid #cbdbe0;
+      background: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #087e8b;
+      box-shadow: 0 0 0 3px rgba(8,126,139,0.2);
+    }
+
+    .btn {
+      border: none;
+      padding: 0.8rem 1.2rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      background: linear-gradient(105deg, #087e8b, #0b5e6b);
+      color: white;
+      box-shadow: 0 4px 10px rgba(8,126,139,0.3);
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(105deg, #0b5e6b, #064e59);
+      transform: scale(0.98);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #bdd3db;
+      color: #1e6f7e;
+    }
+
+    .btn-outline:hover {
+      background: #e3f0f2;
+      border-color: #087e8b;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* tabel penduduk */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 1.2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      padding: 12px 8px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background-color: #eef3f7;
+      font-weight: 600;
+      color: #144d5c;
+    }
+
+    .badge-gender {
+      background: #d9f0f2;
+      padding: 4px 10px;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #c26b6b;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .delete-btn:hover { color: #ad3b3b; transform: scale(1.1);}
+
+    .edit-btn {
+      background: none;
+      border: none;
+      color: #2c8392;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+
+    /* grafik & ringkasan */
+    .stats-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-top: 1.8rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 1rem 1.4rem;
+      flex: 1;
+      min-width: 140px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #087e8b;
+    }
+
+    .chart-container {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 1rem;
+      margin-top: 1rem;
+      max-height: 280px;
+    }
+
+    footer {
+      margin-top: 2.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #4b6f7e;
+      border-top: 1px solid rgba(0,0,0,0.05);
+      padding-top: 1.5rem;
+    }
+
+    @media (max-width: 860px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+      .header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+    }
+    .search-box {
+      margin-bottom: 1rem;
+    }
+    .search-box input {
+      background: #ffffffdb;
+      border-radius: 2rem;
+      padding-left: 2rem;
+    }
+    .fa-search {
+      position: relative;
+      left: 28px;
+      top: 31px;
+      font-size: 0.8rem;
+      color: #7c9aa8;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <div class="logo-area">
+      <h1><i class="fas fa-people-arrows" style="color:#087e8b;"></i> SensusWarga</h1>
+      <p>Data kependudukan modern & realtime</p>
+    </div>
+    <div class="stats-badge">
+      <i class="fas fa-database"></i> <span id="totalCountDisplay">0</span> Jiwa Terdata
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- FORMULIR SENSUS -->
+    <div class="card">
+      <div class="card-title">
+        <i class="fas fa-user-plus"></i> 
+        <span>Tambah / Edit Penduduk</span>
+      </div>
+      <form id="sensusForm">
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+          <label><i class="fas fa-id-card"></i> NIK (16 digit)</label>
+          <input type="text" id="nik" placeholder="3521011001230001" maxlength="16" required>
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-user"></i> Nama Lengkap</label>
+          <input type="text" id="nama" placeholder="Aisyah Putri Ramadhani" required>
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-venus-mars"></i> Jenis Kelamin</label>
+          <select id="gender">
+            <option value="Laki-laki">Laki-laki</option>
+            <option value="Perempuan">Perempuan</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-calendar-alt"></i> Tanggal Lahir</label>
+          <input type="date" id="tanggalLahir" required>
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-map-marker-alt"></i> Alamat</label>
+          <input type="text" id="alamat" placeholder="Desa/Kelurahan, Kecamatan" required>
+        </div>
+        <div class="action-buttons">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan Data</button>
+          <button type="button" id="resetBtn" class="btn btn-outline"><i class="fas fa-undo-alt"></i> Batal / Baru</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TABEL & PENCARIAN -->
+    <div class="card">
+      <div class="card-title">
+        <i class="fas fa-table-list"></i>
+        <span>Daftar Warga Terdata</span>
+      </div>
+      <div class="search-box" style="position: relative;">
+        <i class="fas fa-search" style="position: absolute; left: 15px; top: 33px; z-index: 1; opacity: 0.7;"></i>
+        <input type="text" id="searchInput" placeholder="Cari NIK / Nama / Alamat..." style="padding-left: 38px;">
+      </div>
+      <div class="table-wrapper">
+        <table id="populationTable">
+          <thead>
+            <tr><th>NIK</th><th>Nama</th><th>JK</th><th>Tanggal Lahir</th><th>Alamat</th><th style="width:70px">Aksi</th></tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="6" style="text-align:center;">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistik dan Grafik -->
+  <div class="card" style="margin-top: 0.5rem;">
+    <div class="card-title"><i class="fas fa-chart-pie"></i> Statistik & Demografi</div>
+    <div class="stats-row">
+      <div class="stat-card"><i class="fas fa-venus"></i> Perempuan <div class="stat-number" id="femaleCount">0</div></div>
+      <div class="stat-card"><i class="fas fa-mars"></i> Laki-laki <div class="stat-number" id="maleCount">0</div></div>
+      <div class="stat-card"><i class="fas fa-children"></i> Usia Produktif (15-64) <div class="stat-number" id="productiveCount">0</div></div>
+      <div class="stat-card"><i class="fas fa-city"></i> Total KK <div class="stat-number" id="totalKK">0</div></div>
+    </div>
+    <div class="chart-container">
+      <canvas id="genderChart" width="400" height="180" style="max-height:220px; width:100%"></canvas>
+    </div>
+  </div>
+  <footer>
+    <i class="fas fa-globe"></i> Aplikasi Sensus Penduduk Modern | Data tersimpan di localStorage | Offline & Online (GitHub Pages Ready)
+  </footer>
+</div>
+
+<script>
+  // ---------- DATA MODEL ----------
+  let pendudukList = [];       // array of objects
+  let editMode = false;
+  let currentEditId = null;
+
+  // DOM Elements
+  const form = document.getElementById('sensusForm');
+  const nikInput = document.getElementById('nik');
+  const namaInput = document.getElementById('nama');
+  const genderSelect = document.getElementById('gender');
+  const tglLahirInput = document.getElementById('tanggalLahir');
+  const alamatInput = document.getElementById('alamat');
+  const editIdHidden = document.getElementById('editId');
+  const resetBtn = document.getElementById('resetBtn');
+  const tableBody = document.getElementById('tableBody');
+  const searchInput = document.getElementById('searchInput');
+  const totalCountSpan = document.getElementById('totalCountDisplay');
+  const femaleCountSpan = document.getElementById('femaleCount');
+  const maleCountSpan = document.getElementById('maleCount');
+  const productiveCountSpan = document.getElementById('productiveCount');
+  const totalKKSpan = document.getElementById('totalKK');
+
+  let genderChart = null;
+
+  // Helper: Simpan ke localStorage
+  function saveToLocalStorage() {
+    localStorage.setItem('sensus_penduduk_data', JSON.stringify(pendudukList));
+  }
+
+  // Helper: load data awal (contoh seeding jika kosong)
+  function loadInitialData() {
+    const stored = localStorage.getItem('sensus_penduduk_data');
+    if(stored) {
+      pendudukList = JSON.parse(stored);
+    } 
+    if(!pendudukList || pendudukList.length === 0) {
+      // data dummy modern dan representatif
+      pendudukList = [
+        { id: Date.now()+1, nik: "3521011001230001", nama: "Budi Santoso", gender: "Laki-laki", tanggalLahir: "1990-05-12", alamat: "Jl. Merdeka No.12, Jakarta" },
+        { id: Date.now()+2, nik: "3521012002340002", nama: "Siti Aminah", gender: "Perempuan", tanggalLahir: "1985-08-23", alamat: "Jl. Kenanga Blok B3, Bandung" },
+        { id: Date.now()+3, nik: "3521013003450003", nama: "Reza Fadillah", gender: "Laki-laki", tanggalLahir: "2005-11-02", alamat: "Perumahan Griya Asri, Surabaya" },
+        { id: Date.now()+4, nik: "3521014004560004", nama: "Maya Sari", gender: "Perempuan", tanggalLahir: "2010-07-19", alamat: "Jl. Mawar Indah No.8, Semarang" },
+        { id: Date.now()+5, nik: "3521015005670005", nama: "Ahmad Hidayat", gender: "Laki-laki", tanggalLahir: "1978-12-30", alamat: "Kp. Cibuntu RT02/03, Bogor" }
+      ];
+      saveToLocalStorage();
+    }
+  }
+
+  // hitung umur dari tgl lahir (tahun)
+  function hitungUmur(tglLahirStr) {
+    const today = new Date();
+    const birthDate = new Date(tglLahirStr);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+    return age;
+  }
+
+  // Hitung statistik & update UI
+  function updateStatistics() {
+    const total = pendudukList.length;
+    totalCountSpan.innerText = total;
+    let female = pendudukList.filter(p => p.gender === "Perempuan").length;
+    let male = pendudukList.filter(p => p.gender === "Laki-laki").length;
+    femaleCountSpan.innerText = female;
+    maleCountSpan.innerText = male;
+
+    // usia produktif 15-64
+    let productive = pendudukList.filter(p => {
+      const umur = hitungUmur(p.tanggalLahir);
+      return umur >= 15 && umur <= 64;
+    }).length;
+    productiveCountSpan.innerText = productive;
+
+    // estimasi jumlah KK unik berdasarkan alamat (sederhana -> distinct alamat)
+    let uniqueAddress = new Set(pendudukList.map(p => p.alamat.trim().toLowerCase()));
+    totalKKSpan.innerText = uniqueAddress.size;
+
+    // update gender chart
+    if(genderChart) {
+      genderChart.data.datasets[0].data = [male, female];
+      genderChart.update();
+    }
+  }
+
+  // Render tabel dengan filter search
+  function renderTable() {
+    const keyword = searchInput.value.toLowerCase();
+    let filtered = pendudukList.filter(p => 
+      p.nik.toLowerCase().includes(keyword) || 
+      p.nama.toLowerCase().includes(keyword) || 
+      p.alamat.toLowerCase().includes(keyword)
+    );
+    if(filtered.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada data penduduk</td></tr>';
+      updateStatistics();
+      return;
+    }
+    let html = '';
+    filtered.forEach(p => {
+      const tglFormatted = p.tanggalLahir ? new Date(p.tanggalLahir).toLocaleDateString('id-ID') : '-';
+      html += `
+        <tr>
+          <td>${escapeHtml(p.nik)}</td>
+          <td><strong>${escapeHtml(p.nama)}</strong></td>
+          <td><span class="badge-gender">${p.gender === 'Laki-laki' ? '♂ Laki' : '♀ Perempuan'}</span></td>
+          <td>${tglFormatted}</td>
+          <td>${escapeHtml(p.alamat)}</td>
+          <td>
+            <button class="edit-btn" data-id="${p.id}" title="Edit"><i class="fas fa-pen"></i></button>
+            <button class="delete-btn" data-id="${p.id}" title="Hapus"><i class="fas fa-trash-alt"></i></button>
+          </td>
+        </tr>
+      `;
+    });
+    tableBody.innerHTML = html;
+    // attach event listeners ke tombol edit/hapus
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.getAttribute('data-id'));
+        editPendudukById(id);
+      });
+    });
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.getAttribute('data-id'));
+        deletePendudukById(id);
+      });
+    });
+    updateStatistics();
+  }
+
+  // helper escape HTML
+  function escapeHtml(str) {
+    if(!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if(m === '&') return '&amp;';
+      if(m === '<') return '&lt;';
+      if(m === '>') return '&gt;';
+      return m;
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+      return c;
+    });
+  }
+
+  // tambah / update data
+  function savePenduduk(event) {
+    event.preventDefault();
+    // validasi NIK (16 digit angka)
+    let nikVal = nikInput.value.trim();
+    if(!/^\d{16}$/.test(nikVal)) {
+      alert("NIK harus terdiri dari 16 digit angka!");
+      return;
+    }
+    const namaVal = namaInput.value.trim();
+    if(namaVal === "") { alert("Nama tidak boleh kosong"); return; }
+    const genderVal = genderSelect.value;
+    const tglLahirVal = tglLahirInput.value;
+    if(!tglLahirVal) { alert("Pilih tanggal lahir"); return; }
+    const alamatVal = alamatInput.value.trim();
+    if(alamatVal === "") { alert("Alamat tidak boleh kosong"); return; }
+
+    // cek duplikat NIK (kecuali sedang edit data sendiri)
+    const existing = pendudukList.find(p => p.nik === nikVal && (editMode ? p.id !== currentEditId : true));
+    if(existing) {
+      alert("NIK sudah terdaftar! Gunakan NIK unik.");
+      return;
+    }
+
+    if(editMode && currentEditId !== null) {
+      // update existing
+      const index = pendudukList.findIndex(p => p.id === currentEditId);
+      if(index !== -1) {
+        pendudukList[index] = {
+          ...pendudukList[index],
+          nik: nikVal,
+          nama: namaVal,
+          gender: genderVal,
+          tanggalLahir: tglLahirVal,
+          alamat: alamatVal
+        };
+      }
+      editMode = false;
+      currentEditId = null;
+      editIdHidden.value = "";
+    } else {
+      // tambah baru
+      const newId = Date.now();
+      pendudukList.push({
+        id: newId,
+        nik: nikVal,
+        nama: namaVal,
+        gender: genderVal,
+        tanggalLahir: tglLahirVal,
+        alamat: alamatVal
+      });
+    }
+    saveToLocalStorage();
+    resetForm();
+    renderTable();
+  }
+
+  function editPendudukById(id) {
+    const p = pendudukList.find(item => item.id === id);
+    if(!p) return;
+    editMode = true;
+    currentEditId = p.id;
+    nikInput.value = p.nik;
+    namaInput.value = p.nama;
+    genderSelect.value = p.gender;
+    tglLahirInput.value = p.tanggalLahir;
+    alamatInput.value = p.alamat;
+    editIdHidden.value = p.id;
+    // sedikit scroll ke form
+    document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function deletePendudukById(id) {
+    if(confirm("Yakin hapus data penduduk ini?")) {
+      pendudukList = pendudukList.filter(p => p.id !== id);
+      saveToLocalStorage();
+      if(editMode && currentEditId === id) resetForm();
+      renderTable();
+    }
+  }
+
+  function resetForm() {
+    form.reset();
+    editMode = false;
+    currentEditId = null;
+    editIdHidden.value = "";
+    nikInput.value = "";
+    namaInput.value = "";
+    genderSelect.value = "Laki-laki";
+    tglLahirInput.value = "";
+    alamatInput.value = "";
+  }
+
+  // Inisialisasi Chart
+  function initChart() {
+    const ctx = document.getElementById('genderChart').getContext('2d');
+    genderChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Laki-laki', 'Perempuan'],
+        datasets: [{
+          data: [0, 0],
+          backgroundColor: ['#2c7da0', '#f4a261'],
+          borderWidth: 0,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 12 } } },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} jiwa (${((ctx.raw / pendudukList.length)*100 || 0).toFixed(1)}%)` } }
+        }
+      }
+    });
+  }
+
+  // event listener untuk search
+  searchInput.addEventListener('input', () => renderTable());
+  resetBtn.addEventListener('click', resetForm);
+  form.addEventListener('submit', savePenduduk);
+
+  // ---- INISIALISASI APLIKASI ----
+  function init() {
+    loadInitialData();
+    initChart();
+    renderTable();
+    // tambahkan pengecekan online/offline tidak diperlukan, karena localStorage bekerja offline
+    // Untuk dukungan GitHub Pages, semua static, path relatif.
+  }
+
+  init();
+</script>
+</body>
+</html>
