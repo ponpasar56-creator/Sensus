@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Sensus JATIM | Maps Akurat + Kelola Anggota</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f4f8;
+      color: #1a2c3e;
+      padding: 20px;
+    }
+    .app-container { max-width: 1400px; margin: 0 auto; }
+    .header {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 1rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo-area h1 { font-size: 1.6rem; font-weight: 700; color: #1a6d7c; }
+    .logo-area p { font-size: 0.75rem; color: #4a7c8c; }
+    .total-badge { background: #e6f4f5; padding: 0.5rem 1.2rem; border-radius: 2rem; font-weight: 600; }
+    .two-columns { display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.8rem; }
+    .card { background: white; border-radius: 1.5rem; padding: 1.5rem 1.8rem; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+    .card-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.7rem; border-left: 4px solid #1a6d7c; padding-left: 1rem; }
+    .form-group { margin-bottom: 1.2rem; }
+    label { font-weight: 500; font-size: 0.85rem; display: block; margin-bottom: 0.4rem; color: #2c6475; }
+    input, textarea { width: 100%; padding: 0.75rem 1rem; border-radius: 1rem; border: 1px solid #cfdfe5; font-family: 'Inter', sans-serif; font-size: 0.9rem; outline: none; }
+    input:focus, textarea:focus { border-color: #1a6d7c; box-shadow: 0 0 0 3px rgba(26,109,124,0.1); }
+    .btn { border: none; padding: 0.7rem 1.2rem; border-radius: 2rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; justify-content: center; transition: 0.2s; }
+    .btn-primary { background: #1a6d7c; color: white; width: 100%; }
+    .btn-primary:hover { background: #0f5562; transform: scale(0.98); }
+    .btn-outline { background: #f0f6f8; border: 1px solid #cbdde3; color: #1a6d7c; }
+    .btn-small { padding: 0.4rem 0.9rem; font-size: 0.8rem; width: auto; }
+    .action-buttons { display: flex; gap: 12px; margin-top: 15px; }
+    .map-container { margin-top: 12px; border-radius: 1rem; overflow: hidden; border: 1px solid #cde3e9; height: 260px; }
+    #locationMap { height: 100%; width: 100%; }
+    .map-control-buttons { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .map-btn { background: #eef3f7; border: none; border-radius: 2rem; padding: 6px 12px; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
+    .qr-panel { margin-top: 1.5rem; padding-top: 1.2rem; border-top: 1px solid #e0edf0; text-align: center; }
+    .qr-placeholder { background: #f9fbfc; padding: 12px; border-radius: 1rem; display: inline-block; }
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #e2edf0; }
+    th { background-color: #f8fbfc; font-weight: 600; color: #1a5f6e; }
+    .family-header { background: #eef8fa; font-weight: 600; }
+    .family-badge { background: #d4e9ee; border-radius: 20px; padding: 2px 10px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+    .btn-icon { background: none; border: none; font-size: 1rem; cursor: pointer; margin: 0 4px; color: #4f7e8c; transition: 0.2s; }
+    .btn-icon:hover { opacity: 0.7; transform: scale(1.05); }
+    .btn-icon.danger { color: #c26b6b; }
+    .search-box { margin-bottom: 1.2rem; position: relative; }
+    .search-box i { position: absolute; left: 14px; top: 32px; color: #90adb8; }
+    .search-box input { padding-left: 38px; }
+    footer { margin-top: 2rem; text-align: center; font-size: 0.7rem; color: #6b8b98; padding-top: 1rem; }
+    @media (max-width: 880px) { .two-columns { grid-template-columns: 1fr; } .header { flex-direction: column; text-align: center; gap: 8px; } }
+    .alert-success { background: #dff0f2; border-radius: 1rem; padding: 6px 12px; font-size: 0.7rem; margin-top: 8px; color: #0f5562; }
+    .member-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eef3f7; }
+    .member-item:last-child { border-bottom: none; }
+    #membersListContainer { max-height: 220px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <div class="logo-area">
+      <h1><i class="fas fa-map-marked-alt"></i> Sensus JATIM</h1>
+      <p>Peta akurat | Kelola Anggota Keluarga</p>
+    </div>
+    <div class="total-badge"><i class="fas fa-users"></i> Total Jiwa: <span id="totalJiwaSpan">0</span></div>
+  </div>
+
+  <div class="two-columns">
+    <!-- FORM KELUARGA + MAPS -->
+    <div class="card">
+      <div class="card-title"><i class="fas fa-user-friends"></i><span id="formTitle">Tambah Kepala Keluarga</span></div>
+      <form id="familyForm">
+        <input type="hidden" id="editFamilyId" value="">
+        <div class="form-group">
+          <label><i class="fas fa-user"></i> Nama Kepala Keluarga</label>
+          <input type="text" id="kepalaNama" placeholder="Contoh: Didik" required>
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-map-pin"></i> Alamat Lengkap (Jawa Timur)</label>
+          <textarea id="alamat" rows="2" placeholder="Contoh: Jalan Panglima Sudirman No.10, Surabaya" required></textarea>
+          <div id="geocodeStatus" class="alert-success" style="display:none;"></div>
+        </div>
+        <input type="hidden" id="latitude" value="">
+        <input type="hidden" id="longitude" value="">
+        
+        <div class="form-group">
+          <label><i class="fas fa-map-marker-alt"></i> Lokasi Peta (geser marker)</label>
+          <div class="map-container"><div id="locationMap"></div></div>
+          <div class="map-control-buttons">
+            <button type="button" id="geocodeAddressBtn" class="map-btn"><i class="fas fa-search-location"></i> Cari Alamat (Jatim)</button>
+            <button type="button" id="getCurrentLocationBtn" class="map-btn"><i class="fas fa-location-dot"></i> Lokasi Saya</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fas fa-pen-alt"></i> Keterangan</label>
+          <input type="text" id="keterangan" placeholder="Contoh: Rt2">
+        </div>
+        <div class="action-buttons">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan KK</button>
+          <button type="button" id="resetFormBtn" class="btn btn-outline"><i class="fas fa-undo"></i> Batal</button>
+        </div>
+      </form>
+
+      <!-- Panel Kelola Anggota -->
+      <div id="memberManagementPanel" style="margin-top: 1.5rem; border-top: 1px solid #e0edf0; padding-top: 1rem;">
+        <div class="card-title" style="margin-bottom: 0.8rem; font-size: 1rem;">
+          <i class="fas fa-users"></i> Kelola Anggota Keluarga
+        </div>
+        <div id="selectedFamilyInfo" style="font-size: 0.8rem; background: #f0f8fa; padding: 8px 12px; border-radius: 1rem; margin-bottom: 1rem;">
+          Pilih keluarga dari tabel (klik ikon 👥)
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <input type="text" id="memberName" placeholder="Nama anggota" style="flex:2;">
+          <input type="text" id="memberNote" placeholder="Hubungan" style="flex:2;">
+          <button id="addMemberBtn" class="btn btn-primary btn-small" style="width: auto;"><i class="fas fa-plus"></i> Tambah</button>
+        </div>
+        <div id="membersListContainer">
+          <div style="color:#999; text-align:center;">Pilih keluarga terlebih dahulu</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABEL + QR -->
+    <div class="card">
+      <div class="card-title"><i class="fas fa-table-list"></i><span>Data Keluarga JATIM</span></div>
+      <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Cari Nama / Alamat / Anggota..."></div>
+      <div class="table-wrapper">
+        <table id="familyTable">
+          <thead><tr><th>Kepala Keluarga / Anggota</th><th>Alamat</th><th>Aksi</th></tr></thead>
+          <tbody id="tableBody"><tr><td colspan="3">Memuat...</td></tr></tbody>
+        </table>
+      </div>
+      
+      <div class="qr-panel" id="qrPanel" style="display: none;">
+        <div class="card-title" style="font-size: 1rem;"><i class="fas fa-qrcode"></i> QR Code</div>
+        <div id="qrcode" class="qr-placeholder"></div>
+        <button id="navigateBtn" class="btn btn-primary btn-small" style="margin-top: 10px; width: 100%;"><i class="fas fa-directions"></i> Navigasi ke Alamat</button>
+        <button id="closeQrBtn" class="btn btn-outline btn-small" style="margin-top: 8px;">Tutup</button>
+      </div>
+    </div>
+  </div>
+  <footer><i class="fas fa-route"></i> Klik ikon 👥 untuk kelola anggota | Maps: OpenStreetMap (akurat Jatim)</footer>
+</div>
+
+<script>
+  // ==================== DATA ====================
+  let families = [];
+  let selectedFamilyIdForMember = null;
+  let map, marker;
+  let currentQrFamilyId = null;
+
+  // DOM Elements
+  const familyForm = document.getElementById('familyForm');
+  const kepalaNamaInput = document.getElementById('kepalaNama');
+  const alamatInput = document.getElementById('alamat');
+  const latitudeInput = document.getElementById('latitude');
+  const longitudeInput = document.getElementById('longitude');
+  const keteranganInput = document.getElementById('keterangan');
+  const editFamilyIdHidden = document.getElementById('editFamilyId');
+  const resetFormBtn = document.getElementById('resetFormBtn');
+  const tableBody = document.getElementById('tableBody');
+  const searchInput = document.getElementById('searchInput');
+  const totalJiwaSpan = document.getElementById('totalJiwaSpan');
+  const formTitleSpan = document.getElementById('formTitle');
+  const selectedFamilyInfo = document.getElementById('selectedFamilyInfo');
+  const memberNameInput = document.getElementById('memberName');
+  const memberNoteInput = document.getElementById('memberNote');
+  const addMemberBtn = document.getElementById('addMemberBtn');
+  const membersListContainer = document.getElementById('membersListContainer');
+  const geocodeAddressBtn = document.getElementById('geocodeAddressBtn');
+  const getCurrentLocationBtn = document.getElementById('getCurrentLocationBtn');
+  const qrPanel = document.getElementById('qrPanel');
+  const closeQrBtn = document.getElementById('closeQrBtn');
+  const navigateBtn = document.getElementById('navigateBtn');
+  const geocodeStatusDiv = document.getElementById('geocodeStatus');
+
+  // Storage
+  function saveToLocalStorage() { localStorage.setItem('sensus_jatim_fix', JSON.stringify(families)); }
+  
+  function loadInitialData() {
+    const stored = localStorage.getItem('sensus_jatim_fix');
+    if(stored) families = JSON.parse(stored);
+    if(!families || families.length === 0) {
+      families = [
+        { id: Date.now()+1, kepalaNama: "Didik", alamat: "Jl. Panglima Sudirman No.10, Surabaya, Jawa Timur", keterangan: "Rt2", lat: -7.2575, lng: 112.7521, anggota: [] },
+        { id: Date.now()+2, kepalaNama: "Ahmad Hidayat", alamat: "Jl. Merbabu No.5, Malang, Jawa Timur", keterangan: "Rt1", lat: -7.9666, lng: 112.6326, anggota: [] }
+      ];
+      saveToLocalStorage();
+    }
+    families.forEach(f => { if(!f.anggota) f.anggota = []; if(!f.lat || !f.lng) { f.lat = -7.2575; f.lng = 112.7521; } });
+    saveToLocalStorage();
+  }
+
+  function hitungTotalJiwa() { 
+    let total = families.reduce((s,fam) => s + 1 + (fam.anggota?.length || 0), 0);
+    totalJiwaSpan.innerText = total;
+  }
+
+  function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+
+  // ==================== RENDER ANGGOTA (BERSIH) ====================
+  function renderMembersList() {
+    if(!selectedFamilyIdForMember) {
+      membersListContainer.innerHTML = '<div style="color:#999; text-align:center;">Pilih keluarga terlebih dahulu (klik ikon 👥 di tabel)</div>';
+      return;
+    }
+    const family = families.find(f => f.id === selectedFamilyIdForMember);
+    if(!family) {
+      membersListContainer.innerHTML = '<div style="color:#999; text-align:center;">Keluarga tidak ditemukan</div>';
+      return;
+    }
+    
+    if(family.anggota.length === 0) {
+      membersListContainer.innerHTML = '<div style="color:#999; text-align:center; font-style:italic;">Belum ada anggota. Tambahkan di atas.</div>';
+      return;
+    }
+    
+    let html = '';
+    family.anggota.forEach((angg, idx) => {
+      html += `
+        <div class="member-item">
+          <div><strong>${escapeHtml(angg.nama)}</strong> <span style="font-size:0.7rem; color:#6b8b98;">${escapeHtml(angg.keterangan || 'Anggota')}</span></div>
+          <div>
+            <button class="btn-icon edit-member-btn" data-idx="${idx}" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="btn-icon danger delete-member-btn" data-idx="${idx}" title="Hapus"><i class="fas fa-trash-alt"></i></button>
+          </div>
+        </div>
+      `;
+    });
+    membersListContainer.innerHTML = html;
+    
+    // Attach event untuk tombol edit/hapus
+    document.querySelectorAll('.edit-member-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(btn.dataset.idx);
+        editMemberByIdx(selectedFamilyIdForMember, idx);
+      });
+    });
+    document.querySelectorAll('.delete-member-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(btn.dataset.idx);
+        deleteMemberByIdx(selectedFamilyIdForMember, idx);
+      });
+    });
+  }
+
+  // ==================== RENDER TABEL UTAMA ====================
+  function renderTable() {
+    const keyword = searchInput.value.trim().toLowerCase();
+    const filtered = families.filter(fam => 
+      fam.kepalaNama.toLowerCase().includes(keyword) || 
+      fam.alamat.toLowerCase().includes(keyword) ||
+      (fam.keterangan && fam.keterangan.toLowerCase().includes(keyword)) ||
+      (fam.anggota && fam.anggota.some(a => a.nama.toLowerCase().includes(keyword)))
+    );
+    
+    if(filtered.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="3">Tidak ada data</td></tr>';
+      hitungTotalJiwa();
+      return;
+    }
+    
+    let html = '';
+    filtered.forEach(fam => {
+      html += `<tr class="family-header">
+        <td><strong><i class="fas fa-crown"></i> ${escapeHtml(fam.kepalaNama)}</strong> <span class="family-badge">KK</span></td>
+        <td>${escapeHtml(fam.alamat)}</td>
+        <td>
+          <button class="btn-icon manage-member" data-id="${fam.id}" title="Kelola Anggota"><i class="fas fa-users"></i></button>
+          <button class="btn-icon show-qr" data-id="${fam.id}" title="QR Code"><i class="fas fa-qrcode"></i></button>
+          <button class="btn-icon edit-family" data-id="${fam.id}" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="btn-icon danger delete-family" data-id="${fam.id}" title="Hapus"><i class="fas fa-trash-alt"></i></button>
+        </td>
+      </tr>`;
+      
+      if(fam.anggota && fam.anggota.length) {
+        fam.anggota.forEach(angg => {
+          html += `<tr style="background:#fafdfe;">
+            <td style="padding-left:32px;"><i class="fas fa-user"></i> ${escapeHtml(angg.nama)} <span class="family-badge">Anggota</span><br><span style="font-size:0.7rem;">${escapeHtml(angg.keterangan || '')}</span></td>
+            <td>-</td>
+            <td></td>
+          </tr>`;
+        });
+      }
+    });
+    tableBody.innerHTML = html;
+    
+    // Event listeners
+    document.querySelectorAll('.manage-member').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.dataset.id);
+        selectFamilyForMembers(id);
+      });
+    });
+    document.querySelectorAll('.show-qr').forEach(btn => btn.addEventListener('click', (e) => showQRCode(parseInt(btn.dataset.id))));
+    document.querySelectorAll('.edit-family').forEach(btn => btn.addEventListener('click', (e) => editFamilyById(parseInt(btn.dataset.id))));
+    document.querySelectorAll('.delete-family').forEach(btn => btn.addEventListener('click', (e) => deleteFamilyById(parseInt(btn.dataset.id))));
+    
+    hitungTotalJiwa();
+  }
+
+  // Pilih keluarga untuk kelola anggota
+  function selectFamilyForMembers(familyId) {
+    selectedFamilyIdForMember = familyId;
+    const family = families.find(f => f.id === familyId);
+    if(family) {
+      selectedFamilyInfo.innerHTML = `<strong>Keluarga: ${escapeHtml(family.kepalaNama)}</strong> — Tambah/Edit Anggota`;
+      memberNameInput.value = '';
+      memberNoteInput.value = '';
+      renderMembersList();
+    }
+  }
+
+  // ==================== CRUD ANGGOTA ====================
+  function addMemberToFamily() {
+    if(!selectedFamilyIdForMember) {
+      alert("Pilih keluarga terlebih dahulu dengan klik ikon 👥 pada tabel");
+      return;
+    }
+    const memberName = memberNameInput.value.trim();
+    if(!memberName) {
+      alert("Nama anggota wajib diisi");
+      return;
+    }
+    const fam = families.find(f => f.id === selectedFamilyIdForMember);
+    if(fam) {
+      if(!fam.anggota) fam.anggota = [];
+      fam.anggota.push({ 
+        nama: memberName, 
+        keterangan: memberNoteInput.value.trim() || "Anggota keluarga" 
+      });
+      saveToLocalStorage();
+      memberNameInput.value = '';
+      memberNoteInput.value = '';
+      renderMembersList();
+      renderTable();
+    }
+  }
+
+  function editMemberByIdx(familyId, idx) {
+    const fam = families.find(f => f.id === familyId);
+    if(!fam || !fam.anggota[idx]) return;
+    
+    const newNama = prompt("Edit nama anggota:", fam.anggota[idx].nama);
+    if(newNama && newNama.trim()) fam.anggota[idx].nama = newNama.trim();
+    
+    const newKet = prompt("Edit keterangan (hubungan keluarga):", fam.anggota[idx].keterangan);
+    if(newKet !== null) fam.anggota[idx].keterangan = newKet.trim() || fam.anggota[idx].keterangan;
+    
+    saveToLocalStorage();
+    if(selectedFamilyIdForMember === familyId) renderMembersList();
+    renderTable();
+  }
+
+  function deleteMemberByIdx(familyId, idx) {
+    if(confirm("Hapus anggota ini?")) {
+      const fam = families.find(f => f.id === familyId);
+      if(fam && fam.anggota) {
+        fam.anggota.splice(idx, 1);
+        saveToLocalStorage();
+        if(selectedFamilyIdForMember === familyId) renderMembersList();
+        renderTable();
+      }
+    }
+  }
+
+  // ==================== CRUD KELUARGA ====================
+  function saveFamily(e) {
+    e.preventDefault();
+    const nama = kepalaNamaInput.value.trim();
+    const alamat = alamatInput.value.trim();
+    if(!nama || !alamat) { alert("Nama dan alamat wajib diisi"); return; }
+    
+    let lat = latitudeInput.value ? parseFloat(latitudeInput.value) : null;
+    let lng = longitudeInput.value ? parseFloat(longitudeInput.value) : null;
+    if(!lat || !lng) { 
+      alert("Lokasi belum valid! Klik 'Cari Alamat' atau geser marker pada peta."); 
+      return; 
+    }
+    
+    const editId = editFamilyIdHidden.value ? parseInt(editFamilyIdHidden.value) : null;
+    if(editId) {
+      const idx = families.findIndex(f => f.id === editId);
+      if(idx !== -1) { 
+        families[idx] = { 
+          ...families[idx], 
+          kepalaNama: nama, 
+          alamat, 
+          lat, 
+          lng, 
+          keterangan: keteranganInput.value.trim() 
+        }; 
+      }
+    } else {
+      families.push({ 
+        id: Date.now(), 
+        kepalaNama: nama, 
+        alamat, 
+        lat, 
+        lng, 
+        keterangan: keteranganInput.value.trim(), 
+        anggota: [] 
+      });
+    }
+    saveToLocalStorage();
+    resetFamilyForm();
+    renderTable();
+    if(map && marker) map.setView([lat, lng], 14);
+  }
+
+  function editFamilyById(id) {
+    const fam = families.find(f => f.id === id);
+    if(!fam) return;
+    kepalaNamaInput.value = fam.kepalaNama;
+    alamatInput.value = fam.alamat;
+    keteranganInput.value = fam.keterangan || '';
+    latitudeInput.value = fam.lat;
+    longitudeInput.value = fam.lng;
+    editFamilyIdHidden.value = fam.id;
+    formTitleSpan.innerText = "Edit Kepala Keluarga";
+    if(map && marker) { 
+      map.setView([fam.lat, fam.lng], 14); 
+      marker.setLatLng([fam.lat, fam.lng]); 
+    }
+    document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function deleteFamilyById(id) { 
+    if(confirm("Hapus keluarga beserta anggota?")) { 
+      families = families.filter(f => f.id !== id); 
+      saveToLocalStorage(); 
+      renderTable(); 
+      if(selectedFamilyIdForMember === id) { 
+        selectedFamilyIdForMember = null; 
+        selectedFamilyInfo.innerHTML = "Pilih keluarga dari tabel (klik ikon 👥)"; 
+        membersListContainer.innerHTML = '<div style="color:#999; text-align:center;">Pilih keluarga terlebih dahulu</div>';
+      } 
+      if(currentQrFamilyId === id) qrPanel.style.display = 'none'; 
+    } 
+  }
+
+  function resetFamilyForm() { 
+    familyForm.reset(); 
+    editFamilyIdHidden.value = ""; 
+    formTitleSpan.innerText = "Tambah Kepala Keluarga"; 
+    latitudeInput.value = ""; 
+    longitudeInput.value = ""; 
+    geocodeStatusDiv.style.display = 'none'; 
+    if(map && marker) { 
+      const defaultJatim = [-7.2575, 112.7521];
+      map.setView(defaultJatim, 11); 
+      marker.setLatLng(defaultJatim); 
+    } 
+  }
+
+  // ==================== QR CODE ====================
+  function showQRCode(familyId) {
+    const fam = families.find(f => f.id === familyId);
+    if(!fam) return;
+    currentQrFamilyId = familyId;
+    const dataQR = JSON.stringify({ 
+      id: fam.id, 
+      kepala: fam.kepalaNama, 
+      alamat: fam.alamat, 
+      lat: fam.lat, 
+      lng: fam.lng 
+    });
+    document.getElementById('qrcode').innerHTML = '';
+    new QRCode(document.getElementById('qrcode'), { 
+      text: dataQR, 
+      width: 150, 
+      height: 150, 
+      colorDark: "#1a6d7c" 
+    });
+    qrPanel.style.display = 'block';
+    
+    navigateBtn.onclick = () => {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${fam.lat},${fam.lng}&travelmode=driving`, '_blank');
+    };
+  }
+  closeQrBtn.addEventListener('click', () => { qrPanel.style.display = 'none'; });
+
+  // ==================== MAPS & GEOCODING ====================
+  function initMap() {
+    const jatimCenter = [-7.2575, 112.7521];
+    map = L.map('locationMap').setView(jatimCenter, 11);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap | Fokus Jawa Timur'
+    }).addTo(map);
+    marker = L.marker(jatimCenter, { draggable: true }).addTo(map);
+    
+    marker.on('dragend', function(e) {
+      const pos = marker.getLatLng();
+      latitudeInput.value = pos.lat;
+      longitudeInput.value = pos.lng;
+      reverseGeocode(pos.lat, pos.lng);
+    });
+    map.on('click', function(e) {
+      marker.setLatLng(e.latlng);
+      latitudeInput.value = e.latlng.lat;
+      longitudeInput.value = e.latlng.lng;
+      reverseGeocode(e.latlng.lat, e.latlng.lng);
+    });
+  }
+
+  async function reverseGeocode(lat, lng) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`);
+      const data = await res.json();
+      if(data.display_name) {
+        alamatInput.value = data.display_name;
+        geocodeStatusDiv.innerHTML = "✓ Lokasi diperbarui dari peta";
+        geocodeStatusDiv.style.display = 'block';
+        setTimeout(() => geocodeStatusDiv.style.display = 'none', 2000);
+      }
+    } catch(e) {}
+  }
+
+  async function geocodeAddressToMap() {
+    const address = alamatInput.value.trim();
+    if(!address) { alert("Masukkan alamat lengkap"); return; }
+    const searchQuery = `${address}, Jawa Timur, Indonesia`;
+    geocodeStatusDiv.innerHTML = "<i class='fas fa-spinner fa-pulse'></i> Mencari alamat...";
+    geocodeStatusDiv.style.display = 'block';
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&countrycodes=id`);
+      const data = await res.json();
+      if(data && data.length > 0) {
+        const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+        latitudeInput.value = lat; 
+        longitudeInput.value = lng;
+        map.setView([lat, lng], 14);
+        marker.setLatLng([lat, lng]);
+        if(data[0].display_name) alamatInput.value = data[0].display_name;
+        geocodeStatusDiv.innerHTML = "✓ Alamat ditemukan! Peta diperbarui.";
+        setTimeout(() => geocodeStatusDiv.style.display = 'none', 2500);
+      } else {
+        throw new Error();
+      }
+    } catch(err) {
+      geocodeStatusDiv.innerHTML = "⚠️ Alamat tidak ditemukan. Coba lebih spesifik.";
+      geocodeStatusDiv.classList.add('alert-error');
+      setTimeout(() => {
+        geocodeStatusDiv.style.display = 'none';
+        geocodeStatusDiv.classList.remove('alert-error');
+      }, 3000);
+    }
+  }
+
+  function getCurrentLocation() {
+    if(navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        latitudeInput.value = lat; 
+        longitudeInput.value = lng;
+        map.setView([lat, lng], 14);
+        marker.setLatLng([lat, lng]);
+        reverseGeocode(lat, lng);
+      }, () => alert("Gagal mendapat lokasi"));
+    } else {
+      alert("Browser tidak support geolocation");
+    }
+  }
+
+  // ==================== INIT ====================
+  function init() {
+    loadInitialData();
+    initMap();
+    renderTable();
+    
+    familyForm.addEventListener('submit', saveFamily);
+    resetFormBtn.addEventListener('click', resetFamilyForm);
+    searchInput.addEventListener('input', () => renderTable());
+    addMemberBtn.addEventListener('click', addMemberToFamily);
+    geocodeAddressBtn.addEventListener('click', geocodeAddressToMap);
+    getCurrentLocationBtn.addEventListener('click', getCurrentLocation);
+  }
+  
+  init();
+</script>
+</body>
+</html>
