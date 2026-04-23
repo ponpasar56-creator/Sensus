@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Sensus Keluarga JATIM | Manajemen Data + Maps</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sensus JATIM">
+    <!-- Leaflet (OpenStreetMap) - Akurat untuk Jawa Timur -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            padding: 20px;
+        }
+        h1 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        
+        .button-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: white;
+        }
+        .btn-primary { background-color: #3498db; }
+        .btn-primary:hover { background-color: #2980b9; }
+        .btn-success { background-color: #27ae60; }
+        .btn-success:hover { background-color: #229954; }
+        .btn-warning { background-color: #f39c12; }
+        .btn-warning:hover { background-color: #e67e22; }
+        .btn-danger { background-color: #e74c3c; }
+        .btn-danger:hover { background-color: #c0392b; }
+        .btn-info { background-color: #1abc9c; }
+        .btn-info:hover { background-color: #16a085; }
+        .btn-orange { background-color: #e67e22; }
+        .btn-orange:hover { background-color: #d35400; }
+        
+        .search-box {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .search-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f9ff; }
+        
+        .action-btn {
+            padding: 5px 10px;
+            margin: 0 3px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        .edit-btn { background-color: #f39c12; }
+        .edit-btn:hover { background-color: #e67e22; }
+        .delete-btn { background-color: #e74c3c; }
+        .delete-btn:hover { background-color: #c0392b; }
+        .navigate-btn { background-color: #1abc9c; }
+        .navigate-btn:hover { background-color: #16a085; }
+        
+        /* MODAL YANG DIPERBAIKI - BISA SCROLL */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+            overflow-y: auto;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            background-color: white;
+            margin: 20px auto;
+            padding: 25px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 700px;
+            animation: slideDown 0.3s;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+            background: white;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        .modal-scroll-area {
+            max-height: calc(90vh - 120px);
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .modal-content input, .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .modal-content textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+            position: sticky;
+            bottom: 0;
+            background: white;
+        }
+        .modal-buttons .btn {
+            min-width: 100px;
+        }
+        
+        /* Map container di modal */
+        .map-modal-container {
+            margin: 10px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+        #modalMap {
+            height: 250px;
+            width: 100%;
+        }
+        .map-control-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .map-btn {
+            background: #eef3f7;
+            border: none;
+            border-radius: 2rem;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            color: #1a6d7c;
+        }
+        .coord-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Section khusus untuk tambah anggota */
+        .member-section {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 1px solid #b8e1fc;
+        }
+        .member-section h4 {
+            margin: 0 0 10px 0;
+            color: #2980b9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .member-list {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .member-tag {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 11px;
+            margin: 2px;
+        }
+        .input-member {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .input-member input {
+            flex: 2;
+            min-width: 150px;
+            margin: 0;
+        }
+        .input-member button {
+            padding: 8px 15px;
+            white-space: nowrap;
+        }
+        
+        .bulk-area {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        .bulk-area textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        
+        .stats {
+            margin-top: 15px;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .info-badge {
+            background: #e67e22;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .install-banner {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .install-banner button {
+            background: white;
+            color: #27ae60;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .label-text {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-top: 10px;
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .main-container { padding: 15px; }
+            th, td { padding: 8px; font-size: 12px; }
+            .btn { padding: 8px 12px; font-size: 12px; }
+            .modal-content { margin: 10px auto; width: 95%; padding: 15px; }
+            .modal-scroll-area { max-height: calc(90vh - 100px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div id="installBanner" class="install-banner" style="display: none;">
+            <span>📱 Install aplikasi ini ke layar utama Android</span>
+            <button id="installBtn">Install Sekarang</button>
+        </div>
+        
+        <h1>🗺️ Sensus Keluarga JATIM 
+            <span class="info-badge">✨ + Maps & Navigasi</span>
+        </h1>
+        <div class="subtitle">Klik Edit → tambah anggota & pilih lokasi di peta → Navigasi ke alamat anggota lain</div>
+        
+        <div class="button-panel">
+            <button class="btn btn-primary" onclick="openAddModal()">➕ Tambah Data</button>
+            <button class="btn btn-info" onclick="toggleBulkMode()">📊 Tambah Banyak</button>
+            <button class="btn btn-warning" onclick="exportData()">💾 Export JSON</button>
+            <button class="btn btn-success" onclick="importData()">📂 Import JSON</button>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Cari nama, alamat, atau keterangan..." onkeyup="quickSearch()">
+            <button class="btn btn-primary" onclick="quickSearch()">Cari</button>
+            <button class="btn btn-warning" onclick="clearSearch()">Reset</button>
+        </div>
+        
+        <div id="bulkArea" class="bulk-area">
+            <h3>Tambah Banyak Data</h3>
+            <p>Format: <strong>Nama | Alamat | Keterangan | Lat | Lng</strong> (Lat/Lng opsional)</p>
+            <textarea id="bulkData" rows="6" placeholder="Contoh:
+Ahmad Wijaya | Jl. Merdeka No. 12, Surabaya | Karyawan tetap | -7.2575 | 112.7521
+Siti Nurhaliza | Jl. Ijen No. 5, Malang | Freelance | -7.9666 | 112.6326"></textarea>
+            <div class="bulk-example" style="font-size: 12px; color: #666;">💡 Setiap baris: Nama | Alamat | Keterangan | Lat (opsional) | Lng (opsional)</div>
+            <div class="modal-buttons" style="position: relative; border-top: none; padding-top: 10px;">
+                <button class="btn btn-success" onclick="processBulkAdd()">Proses</button>
+                <button class="btn btn-danger" onclick="toggleBulkMode()">Tutup</button>
+            </div>
+        </div>
+        
+        <div class="table-wrapper">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama</th>
+                        <th>Alamat</th>
+                        <th>Keterangan</th>
+                        <th style="width: 180px">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="5" style="text-align:center">Memuat data...</td</tr>
+                </tbody>
+             </table>
+        </div>
+        
+        <div class="stats">
+            Total data: <span id="totalCount">0</span> | Menampilkan: <span id="displayCount">0</span>
+        </div>
+    </div>
+    
+    <!-- MODAL YANG DIPERBAIKI - BISA SCROLL dengan area scroll khusus -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Tambah Data</h3>
+            <div class="modal-scroll-area">
+                <label class="label-text">Nama Lengkap:</label>
+                <input type="text" id="inputNama" placeholder="Nama lengkap">
+                
+                <label class="label-text">Alamat Lengkap (Jawa Timur):</label>
+                <textarea id="inputAlamat" placeholder="Alamat lengkap di Jawa Timur" rows="2"></textarea>
+                
+                <label class="label-text">🗺️ Lokasi pada Peta (klik/tarik marker):</label>
+                <div class="map-modal-container">
+                    <div id="modalMap"></div>
+                </div>
+                <div class="map-control-buttons">
+                    <button type="button" id="geocodeModalBtn" class="map-btn">🔍 Cari dari Alamat</button>
+                    <button type="button" id="currentLocationBtn" class="map-btn">📍 Lokasi Saya</button>
+                </div>
+                <div id="coordInfo" class="coord-info"></div>
+                <input type="hidden" id="inputLat" value="">
+                <input type="hidden" id="inputLng" value="">
+                
+                <label class="label-text">Keterangan:</label>
+                <textarea id="inputKeterangan" placeholder="Keterangan" rows="2"></textarea>
+                
+                <!-- Section untuk tambah anggota -->
+                <div id="memberSection" class="member-section" style="display: none;">
+                    <h4>👥 Daftar Anggota Keluarga</h4>
+                    <div id="memberList" class="member-list"></div>
+                    <div class="input-member">
+                        <input type="text" id="newMemberInput" placeholder="Nama anggota baru (pisah dengan koma)">
+                        <button class="btn btn-orange" onclick="addMembersToCurrent()">➕ Tambah</button>
+                    </div>
+                    <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                        💡 Contoh: "Budi", atau "Budi, Cici, Dedi" untuk banyak sekaligus
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-success" onclick="saveData()">✅ Simpan</button>
+                <button class="btn btn-danger" onclick="closeModal()">❌ Batal</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ==================== DATA STORE ====================
+        let dataStore = [];
+        let editIndex = -1;
+        let currentSearchTerm = '';
+        
+        // Variabel untuk map di modal
+        let modalMap, modalMarker;
+        
+        // Data awal dengan koordinat Jawa Timur
+        function initSampleData() {
+            return [
+                { nama: "Ahmad Wijaya (Anggota: Budi)", alamat: "Jl. Merdeka No. 12, Surabaya, Jawa Timur", keterangan: "Karyawan tetap", lat: -7.2575, lng: 112.7521 },
+                { nama: "Siti Nurhaliza", alamat: "Jl. Ijen No. 5, Malang, Jawa Timur", keterangan: "Freelance", lat: -7.9666, lng: 112.6326 },
+                { nama: "Budi Santoso", alamat: "Ds. Sukamakmur RT 02/04, Malang, Jawa Timur", keterangan: "Mahasiswa magang", lat: -7.982, lng: 112.63 },
+                { nama: "Dewi Lestari (Anggota: Rina, Sari)", alamat: "Apartemen Green Tower Lantai 8, Surabaya, Jawa Timur", keterangan: "Manajer proyek", lat: -7.25, lng: 112.75 },
+                { nama: "Eko Prasetyo", alamat: "Jl. Kenanga No. 45, Surabaya, Jawa Timur", keterangan: "Sedang cuti", lat: -7.26, lng: 112.74 }
+            ];
+        }
+        
+        function loadDataFromStorage() {
+            const saved = localStorage.getItem('sensusJatimData');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        dataStore = parsed;
+                        dataStore.forEach(item => {
+                            if (!item.lat || !item.lng) {
+                                item.lat = -7.2575;
+                                item.lng = 112.7521;
+                            }
+                        });
+                        return;
+                    }
+                } catch(e) {}
+            }
+            dataStore = initSampleData();
+            saveToStorage();
+        }
+        
+        function saveToStorage() {
+            localStorage.setItem('sensusJatimData', JSON.stringify(dataStore));
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // ==================== PARSING NAMA & ANGGOTA ====================
+        function parseNamaWithMembers(fullName) {
+            const memberPattern = /^(.+?)\s*\(Anggota:\s*(.+?)\)$/;
+            const match = fullName.match(memberPattern);
+            
+            if (match) {
+                return {
+                    baseName: match[1].trim(),
+                    members: match[2].split(',').map(m => m.trim())
+                };
+            }
+            return {
+                baseName: fullName,
+                members: []
+            };
+        }
+        
+        function combineNameWithMembers(baseName, members) {
+            if (!members || members.length === 0) {
+                return baseName;
+            }
+            return `${baseName} (Anggota: ${members.join(', ')})`;
+        }
+        
+        function updateMemberSection() {
+            const memberSection = document.getElementById('memberSection');
+            const memberListDiv = document.getElementById('memberList');
+            const inputNama = document.getElementById('inputNama').value;
+            
+            if (editIndex === -1) {
+                memberSection.style.display = 'none';
+                return;
+            }
+            
+            memberSection.style.display = 'block';
+            const parsed = parseNamaWithMembers(inputNama);
+            
+            if (parsed.members.length === 0) {
+                memberListDiv.innerHTML = '<span style="color: #999;">Belum ada anggota</span>';
+            } else {
+                let html = '<strong>👥 Anggota saat ini:</strong><br>';
+                parsed.members.forEach(member => {
+                    html += `<span class="member-tag">👤 ${escapeHtml(member)}</span> `;
+                });
+                memberListDiv.innerHTML = html;
+            }
+        }
+        
+        function addMembersToCurrent() {
+            const input = document.getElementById('newMemberInput');
+            let newMembersText = input.value.trim();
+            
+            if (!newMembersText) {
+                alert('Masukkan nama anggota yang akan ditambahkan!');
+                return;
+            }
+            
+            let currentNama = document.getElementById('inputNama').value;
+            const parsed = parseNamaWithMembers(currentNama);
+            let newMembers = newMembersText.split(',').map(m => m.trim()).filter(m => m);
+            
+            if (newMembers.length === 0) {
+                alert('Nama anggota tidak valid!');
+                return;
+            }
+            
+            let allMembers = [...parsed.members, ...newMembers];
+            const uniqueMembers = [];
+            const seen = new Set();
+            for (let member of allMembers) {
+                const lower = member.toLowerCase();
+                if (!seen.has(lower)) {
+                    seen.add(lower);
+                    uniqueMembers.push(member);
+                }
+            }
+            
+            const newNama = combineNameWithMembers(parsed.baseName, uniqueMembers);
+            document.getElementById('inputNama').value = newNama;
+            document.getElementById('newMemberInput').value = '';
+            
+            updateMemberSection();
+            alert(`✅ Berhasil menambahkan ${newMembers.length} anggota baru`);
+        }
+        
+        // ==================== NAVIGASI KE ALAMAT ====================
+        function navigateToAddress(lat, lng, alamat) {
+            if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
+            } else {
+                const encodedAlamat = encodeURIComponent(alamat + ", Jawa Timur");
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAlamat}`, '_blank');
+            }
+        }
+        
+        // ==================== RENDER TABEL ====================
+        function renderTable() {
+            const searchTerm = currentSearchTerm.toLowerCase().trim();
+            let filteredData = dataStore;
+            
+            if (searchTerm !== '') {
+                filteredData = dataStore.filter(item => 
+                    item.nama.toLowerCase().includes(searchTerm) ||
+                    item.alamat.toLowerCase().includes(searchTerm) ||
+                    item.keterangan.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            const tbody = document.getElementById('tableBody');
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Tidak ada data</td></tr>';
+                document.getElementById('displayCount').innerText = '0';
+                document.getElementById('totalCount').innerText = dataStore.length;
+                return;
+            }
+            
+            let html = '';
+            filteredData.forEach((item, idx) => {
+                const originalIndex = dataStore.findIndex((orig, i) => 
+                    orig.nama === item.nama && orig.alamat === item.alamat
+                );
+                
+                const parsed = parseNamaWithMembers(item.nama);
+                let namaDisplay = escapeHtml(parsed.baseName);
+                if (parsed.members.length > 0) {
+                    namaDisplay += `<span style="font-size: 10px; color: #e67e22;"> (+${parsed.members.length} anggota)</span>`;
+                }
+                
+                html += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${namaDisplay}</td>
+                        <td>${escapeHtml(item.alamat)}</td>
+                        <td>${escapeHtml(item.keterangan)}</td>
+                        <td>
+                            <button class="action-btn edit-btn" onclick="openEditModal(${originalIndex})">✏️ Edit</button>
+                            <button class="action-btn navigate-btn" onclick="navigateToAddress(${item.lat}, ${item.lng}, '${escapeHtml(item.alamat)}')">🧭 Navigasi</button>
+                            <button class="action-btn delete-btn" onclick="deleteData(${originalIndex})">🗑️ Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+            
+            document.getElementById('displayCount').innerText = filteredData.length;
+            document.getElementById('totalCount').innerText = dataStore.length;
+        }
+        
+        function quickSearch() {
+            currentSearchTerm = document.getElementById('searchInput').value;
+            renderTable();
+        }
+        
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            currentSearchTerm = '';
+            renderTable();
+        }
+        
+        // ==================== MODAL & MAPS ====================
+        function initModalMap() {
+            const jatimCenter = [-7.2575, 112.7521];
+            modalMap = L.map('modalMap').setView(jatimCenter, 10);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap | Fokus Jawa Timur'
+            }).addTo(modalMap);
+            modalMarker = L.marker(jatimCenter, { draggable: true }).addTo(modalMap);
+            
+            modalMarker.on('dragend', function(e) {
+                const pos = modalMarker.getLatLng();
+                document.getElementById('inputLat').value = pos.lat;
+                document.getElementById('inputLng').value = pos.lng;
+                document.getElementById('coordInfo').innerHTML = `📍 Koordinat: ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
+                reverseGeocodeModal(pos.lat, pos.lng);
+            });
+            modalMap.on('click', function(e) {
+                modalMarker.setLatLng(e.latlng);
+                document.getElementById('inputLat').value = e.latlng.lat;
+                document.getElementById('inputLng').value = e.latlng.lng;
+                document.getElementById('coordInfo').innerHTML = `📍 Koordinat: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+                reverseGeocodeModal(e.latlng.lat, e.latlng.lng);
+            });
+        }
+        
+        async function reverseGeocodeModal(lat, lng) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`);
+                const data = await res.json();
+                if (data.display_name) {
+                    document.getElementById('inputAlamat').value = data.display_name;
+                }
+            } catch(e) {}
+        }
+        
+        async function geocodeModalAddress() {
+            const address = document.getElementById('inputAlamat').value.trim();
+            if (!address) { alert("Masukkan alamat terlebih dahulu!"); return; }
+            const searchQuery = `${address}, Jawa Timur, Indonesia`;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&countrycodes=id`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+                    document.getElementById('inputLat').value = lat;
+                    document.getElementById('inputLng').value = lng;
+                    document.getElementById('coordInfo').innerHTML = `📍 Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    modalMap.setView([lat, lng], 14);
+                    modalMarker.setLatLng([lat, lng]);
+                    if (data[0].display_name) document.getElementById('inputAlamat').value = data[0].display_name;
+                    alert("✅ Alamat ditemukan di peta!");
+                } else {
+                    alert("⚠️ Alamat tidak ditemukan. Coba lebih spesifik.");
+                }
+            } catch(err) {
+                alert("Gagal mencari alamat");
+            }
+        }
+        
+        function getCurrentLocationModal() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                    document.getElementById('inputLat').value = lat;
+                    document.getElementById('inputLng').value = lng;
+                    document.getElementById('coordInfo').innerHTML = `📍 Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    modalMap.setView([lat, lng], 14);
+                    modalMarker.setLatLng([lat, lng]);
+                    reverseGeocodeModal(lat, lng);
+                }, () => alert("Gagal mendapat lokasi"));
+            } else {
+                alert("Browser tidak support geolocation");
+            }
+        }
+        
+        function openAddModal() {
+            editIndex = -1;
+            document.getElementById('modalTitle').innerText = '➕ Tambah Data Baru';
+            document.getElementById('inputNama').value = '';
+            document.getElementById('inputAlamat').value = '';
+            document.getElementById('inputKeterangan').value = '';
+            document.getElementById('inputLat').value = '-7.2575';
+            document.getElementById('inputLng').value = '112.7521';
+            document.getElementById('newMemberInput').value = '';
+            document.getElementById('coordInfo').innerHTML = '📍 Koordinat: -7.2575, 112.7521 (Surabaya)';
+            document.getElementById('memberSection').style.display = 'none';
+            
+            if (modalMap) {
+                modalMap.setView([-7.2575, 112.7521], 10);
+                modalMarker.setLatLng([-7.2575, 112.7521]);
+            }
+            document.getElementById('modal').style.display = 'block';
+            document.body.style.overflow = 'hidden'; // prevent body scroll
+        }
+        
+        function openEditModal(index) {
+            if (index < 0 || index >= dataStore.length) return;
+            editIndex = index;
+            const item = dataStore[index];
+            
+            document.getElementById('modalTitle').innerText = '✏️ Edit Data & Tambah Anggota';
+            document.getElementById('inputNama').value = item.nama;
+            document.getElementById('inputAlamat').value = item.alamat;
+            document.getElementById('inputKeterangan').value = item.keterangan;
+            document.getElementById('inputLat').value = item.lat || -7.2575;
+            document.getElementById('inputLng').value = item.lng || 112.7521;
+            document.getElementById('newMemberInput').value = '';
+            document.getElementById('coordInfo').innerHTML = `📍 Koordinat: ${(item.lat || -7.2575).toFixed(6)}, ${(item.lng || 112.7521).toFixed(6)}`;
+            
+            if (modalMap) {
+                modalMap.setView([item.lat || -7.2575, item.lng || 112.7521], 14);
+                modalMarker.setLatLng([item.lat || -7.2575, item.lng || 112.7521]);
+            }
+            
+            updateMemberSection();
+            document.getElementById('modal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function saveData() {
+            let nama = document.getElementById('inputNama').value.trim();
+            const alamat = document.getElementById('inputAlamat').value.trim();
+            const keterangan = document.getElementById('inputKeterangan').value.trim();
+            let lat = parseFloat(document.getElementById('inputLat').value);
+            let lng = parseFloat(document.getElementById('inputLng').value);
+            
+            if (!nama) {
+                alert('Nama harus diisi!');
+                return;
+            }
+            if (!alamat) {
+                alert('Alamat harus diisi!');
+                return;
+            }
+            if (isNaN(lat) || isNaN(lng)) {
+                lat = -7.2575;
+                lng = 112.7521;
+            }
+            
+            if (editIndex === -1) {
+                dataStore.push({ nama, alamat, keterangan, lat, lng });
+            } else {
+                dataStore[editIndex] = { nama, alamat, keterangan, lat, lng };
+            }
+            
+            saveToStorage();
+            closeModal();
+            clearSearch();
+            renderTable();
+        }
+        
+        function deleteData(index) {
+            if (confirm('Yakin ingin menghapus data ini?')) {
+                dataStore.splice(index, 1);
+                saveToStorage();
+                renderTable();
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            editIndex = -1;
+            document.getElementById('newMemberInput').value = '';
+        }
+        
+        function toggleBulkMode() {
+            const bulkArea = document.getElementById('bulkArea');
+            bulkArea.style.display = bulkArea.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function processBulkAdd() {
+            const rawText = document.getElementById('bulkData').value;
+            if (!rawText.trim()) {
+                alert('Masukkan data terlebih dahulu!');
+                return;
+            }
+            
+            const lines = rawText.split(/\r?\n/);
+            let addedCount = 0;
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (line === '') continue;
+                
+                const parts = line.split('|').map(s => s.trim());
+                if (parts.length >= 3) {
+                    const nama = parts[0];
+                    const alamat = parts[1];
+                    const keterangan = parts[2];
+                    let lat = parts.length > 3 ? parseFloat(parts[3]) : -7.2575;
+                    let lng = parts.length > 4 ? parseFloat(parts[4]) : 112.7521;
+                    if (isNaN(lat)) lat = -7.2575;
+                    if (isNaN(lng)) lng = 112.7521;
+                    
+                    if (nama) {
+                        dataStore.push({ nama, alamat, keterangan, lat, lng });
+                        addedCount++;
+                    }
+                }
+            }
+            
+            if (addedCount > 0) {
+                saveToStorage();
+                renderTable();
+                alert(`Berhasil menambahkan ${addedCount} data.`);
+                document.getElementById('bulkData').value = '';
+                toggleBulkMode();
+            } else {
+                alert('Tidak ada data valid. Format: Nama | Alamat | Keterangan | Lat | Lng');
+            }
+        }
+        
+        function exportData() {
+            const dataStr = JSON.stringify(dataStore, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sensus_jatim_${new Date().toISOString().slice(0,19)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    try {
+                        const imported = JSON.parse(evt.target.result);
+                        if (Array.isArray(imported)) {
+                            if (confirm(`Import ${imported.length} data? Data akan digabung.`)) {
+                                dataStore.push(...imported);
+                                saveToStorage();
+                                renderTable();
+                                alert(`Berhasil import ${imported.length} data`);
+                            }
+                        } else {
+                            alert('Format JSON tidak valid.');
+                        }
+                    } catch(err) {
+                        alert('Gagal membaca file: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+        
+        // Event listener
+        document.getElementById('inputNama')?.addEventListener('input', function() {
+            if (editIndex !== -1) {
+                updateMemberSection();
+            }
+        });
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) closeModal();
+        }
+        
+        // PWA Installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').style.display = 'flex';
+        });
+        document.getElementById('installBtn')?.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                document.getElementById('installBanner').style.display = 'none';
+            }
+        });
+        
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW registered:', reg))
+                .catch(err => console.log('SW failed:', err));
+        }
+        
+        // Inisialisasi
+        loadDataFromStorage();
+        renderTable();
+        initModalMap();
+        
+        // Button event untuk maps
+        document.getElementById('geocodeModalBtn')?.addEventListener('click', geocodeModalAddress);
+        document.getElementById('currentLocationBtn')?.addEventListener('click', getCurrentLocationModal);
+    </script>
+</body>
+</html>
