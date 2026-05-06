@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Sensus JATIM | Peta Satelit + Nama Tempat</title>
+    <style>
+        /* Gaya CSS Tetap Sama Sesuai Dokumen Asli */
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f1a24 100%);
+            margin: 0; padding: 20px; min-height: 100vh;
+        }
+        .main-container {
+            max-width: 1400px; margin: 0 auto; background: white;
+            border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden; padding: 20px;
+        }
+        h1 { margin: 0 0 5px 0; color: #2c3e50; font-size: 28px; }
+        .subtitle { color: #7f8c8d; margin-bottom: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+        .button-panel { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s ease; color: white; }
+        .btn-primary { background-color: #3498db; }
+        .btn-success { background-color: #27ae60; }
+        .btn-warning { background-color: #f39c12; }
+        .btn-danger { background-color: #e74c3c; }
+        .btn-info { background-color: #1abc9c; }
+        .btn-orange { background-color: #e67e22; }
+        .search-box { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .search-input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid #e0e0e0; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #34495e; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .action-btn { padding: 5px 10px; margin: 0 3px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: white; }
+        .edit-btn { background-color: #f39c12; }
+        .delete-btn { background-color: #e74c3c; }
+        .navigate-btn { background-color: #1abc9c; }
+        
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; }
+        .modal-content { background-color: white; margin: 30px auto; padding: 25px; border-radius: 16px; width: 90%; max-width: 800px; }
+        .modal-scroll-area { max-height: calc(90vh - 150px); overflow-y: auto; }
+        .modal-content input, .modal-content textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; }
+        .modal-buttons { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ecf0f1; }
+        
+        /* Map */
+        .map-modal-container { margin: 10px 0; border-radius: 12px; overflow: hidden; border: 2px solid #3498db; height: 400px; }
+        #modalMap { height: 100%; width: 100%; }
+        .map-control-buttons { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .map-btn { background: #eef3f7; border: none; border-radius: 2rem; padding: 8px 16px; cursor: pointer; color: #1a6d7c; }
+        .layer-switch { display: flex; gap: 8px; margin-left: auto; }
+        .layer-btn { background: #2c3e50; color: white; border: none; padding: 4px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+        .layer-btn.active { background: #3498db; }
+        .coord-info { font-size: 12px; color: #666; margin-top: 8px; padding: 8px; background: #f0f8ff; border-radius: 8px; min-height: 35px; }
+
+        /* Member */
+        .member-section { background: #f0f8ff; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #b8e1fc; }
+        .member-list { background: white; padding: 10px; border-radius: 8px; margin: 10px 0; max-height: 100px; overflow-y: auto; }
+        .member-tag { display: inline-block; background: #3498db; color: white; padding: 3px 8px; border-radius: 15px; font-size: 11px; margin: 2px; }
+        .input-member { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .input-member input { flex: 2; min-width: 150px; margin: 0; }
+        
+        .bulk-area { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: none; }
+        .stats { margin-top: 15px; padding: 10px; background: #ecf0f1; border-radius: 8px; font-size: 14px; }
+        .info-badge { background: #e67e22; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-left: 10px; }
+        .label-text { font-weight: 600; color: #2c3e50; margin-top: 10px; display: block; }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<div class="main-container">
+    <h1>🛰️ Sensus Keluarga JATIM <span class="info-badge">Satelit Akurat</span></h1>
+    <div class="subtitle">📍 Ketik nama tempat/alamat -> Peta akan otomatis sinkron (Gratis)</div>
+    
+    <div class="button-panel">
+        <button class="btn btn-primary" onclick="openAddModal()">➕ Tambah Data</button>
+        <button class="btn btn-info" onclick="toggleBulkMode()">📊 Tambah Banyak</button>
+        <button class="btn btn-warning" onclick="exportData()">💾 Export JSON</button>
+        <button class="btn btn-success" onclick="importData()">📂 Import JSON</button>
+    </div>
+    
+    <div class="search-box">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Cari nama, alamat, atau keterangan..." onkeyup="quickSearch()">
+        <button class="btn btn-primary" onclick="quickSearch()">Cari</button>
+        <button class="btn btn-warning" onclick="clearSearch()">Reset</button>
+    </div>
+    
+    <div id="bulkArea" class="bulk-area">
+        <h3>Tambah Banyak Data</h3>
+        <textarea id="bulkData" rows="6" placeholder="Format: Nama | Alamat | Keterangan | Lat | Lng"></textarea>
+        <div class="modal-buttons" style="border-top: none;">
+            <button class="btn btn-success" onclick="processBulkAdd()">Proses</button>
+            <button class="btn btn-danger" onclick="toggleBulkMode()">Tutup</button>
+        </div>
+    </div>
+    
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>No</th><th>Nama</th><th>Alamat</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+    <div class="stats">Total data: <span id="totalCount">0</span> | Menampilkan: <span id="displayCount">0</span></div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">Tambah Data</h3>
+        <div class="modal-scroll-area">
+            <label class="label-text">Nama Lengkap:</label>
+            <input type="text" id="inputNama" placeholder="Contoh: Toko Kenzie">
+            
+            <label class="label-text">Alamat/Tempat (Otomatis Sinkron Peta):</label>
+            <textarea id="inputAlamat" rows="2" placeholder="Ketik alamat atau nama tempat populer di Google Maps..."></textarea>
+            
+            <div class="map-modal-container">
+                <div id="modalMap"></div>
+            </div>
+            <div class="map-control-buttons">
+                <button type="button" id="geocodeModalBtn" class="map-btn">🔍 Sinkronkan Sekarang</button>
+                <button type="button" id="currentLocationBtn" class="map-btn">📍 Lokasi Saya</button>
+                <div class="layer-switch">
+                    <button id="satelliteBtn" class="layer-btn active">🛰️ Satelit</button>
+                    <button id="streetBtn" class="layer-btn">🗺️ Peta Jalan</button>
+                </div>
+            </div>
+            <div id="coordInfo" class="coord-info">💡 Ketik alamat di atas, lalu klik di luar kotak untuk sinkronkan peta.</div>
+            
+            <input type="hidden" id="inputLat">
+            <input type="hidden" id="inputLng">
+            
+            <label class="label-text">Keterangan:</label>
+            <textarea id="inputKeterangan" rows="2"></textarea>
+            
+            <div id="memberSection" class="member-section" style="display: none;">
+                <h4>👥 Daftar Anggota Keluarga</h4>
+                <div id="memberList" class="member-list"></div>
+                <div class="input-member">
+                    <input type="text" id="newMemberInput" placeholder="Nama anggota baru">
+                    <button class="btn btn-orange" onclick="addMembersToCurrent()">➕ Tambah</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-success" onclick="saveData()">✅ Simpan</button>
+            <button class="btn btn-danger" onclick="closeModal()">❌ Batal</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let dataStore = [];
+    let editIndex = -1;
+    let currentSearchTerm = '';
+    let modalMap, modalMarker;
+    let currentTileLayer = null;
+    let satelliteLayer, streetLayer;
+
+    // --- SINKRONISASI ALAMAT (NOMINATIM) ---
+    async function geocodeAddress() {
+        const address = document.getElementById('inputAlamat').value.trim();
+        if (address.length < 4) return;
+        
+        const statusDiv = document.getElementById('coordInfo');
+        statusDiv.innerHTML = "🔍 Mencari lokasi di database peta...";
+        statusDiv.style.color = "#e67e22";
+        
+        try {
+            // Viewbox membatasi pencarian di area Jawa Timur agar akurat
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&viewbox=110.89,-8.78,114.77,-6.67&bounded=1&limit=1`;
+            const response = await fetch(url, { headers: { 'Accept-Language': 'id' } });
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                
+                document.getElementById('inputLat').value = lat;
+                document.getElementById('inputLng').value = lng;
+                
+                modalMap.flyTo([lat, lng], 17);
+                modalMarker.setLatLng([lat, lng]);
+                
+                // Opsional: Update alamat ke nama resmi yang ditemukan
+                // document.getElementById('inputAlamat').value = data[0].display_name;
+                
+                statusDiv.innerHTML = `✅ Sinkron! Lokasi ditemukan. Geser marker jika kurang pas.`;
+                statusDiv.style.color = "#27ae60";
+            } else {
+                statusDiv.innerHTML = "⚠️ Tempat tidak ditemukan otomatis. Silakan geser marker manual.";
+                statusDiv.style.color = "#e74c3c";
+            }
+        } catch(e) {
+            statusDiv.innerHTML = "⚠️ Koneksi sibuk. Silakan geser marker manual.";
+        }
+    }
+
+    // Event listener: Sinkron saat user berhenti mengetik/pindah input
+    document.getElementById('inputAlamat').addEventListener('blur', geocodeAddress);
+
+    // --- FUNGSI MAPS ---
+    function initModalMap() {
+        const defaultLoc = [-7.776, 112.198];
+        modalMap = L.map('modalMap').setView(defaultLoc, 15);
+        
+        satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            attribution: '© Google Satellite', maxZoom: 20
+        });
+        
+        streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OSM', maxZoom: 19
+        });
+        
+        satelliteLayer.addTo(modalMap);
+        currentTileLayer = satelliteLayer;
+        
+        modalMarker = L.marker(defaultLoc, { draggable: true }).addTo(modalMap);
+        
+        modalMarker.on('dragend', function() {
+            const pos = modalMarker.getLatLng();
+            document.getElementById('inputLat').value = pos.lat;
+            document.getElementById('inputLng').value = pos.lng;
+            document.getElementById('coordInfo').innerHTML = `📍 Lokasi disesuaikan manual.`;
+        });
+
+        document.getElementById('satelliteBtn').onclick = () => {
+            modalMap.removeLayer(currentTileLayer);
+            satelliteLayer.addTo(modalMap);
+            currentTileLayer = satelliteLayer;
+            document.getElementById('satelliteBtn').classList.add('active');
+            document.getElementById('streetBtn').classList.remove('active');
+        };
+        document.getElementById('streetBtn').onclick = () => {
+            modalMap.removeLayer(currentTileLayer);
+            streetLayer.addTo(modalMap);
+            currentTileLayer = streetLayer;
+            document.getElementById('streetBtn').classList.add('active');
+            document.getElementById('satelliteBtn').classList.remove('active');
+        };
+    }
+
+    function getCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                document.getElementById('inputLat').value = lat;
+                document.getElementById('inputLng').value = lng;
+                modalMap.flyTo([lat, lng], 18);
+                modalMarker.setLatLng([lat, lng]);
+                document.getElementById('coordInfo').innerHTML = "📍 Menggunakan lokasi GPS Anda.";
+            });
+        }
+    }
+
+    // --- FUNGSI DATA (Sesuai HTML Lama) ---
+    function loadDataFromStorage() {
+        const saved = localStorage.getItem('sensusJatimSatelit');
+        dataStore = saved ? JSON.parse(saved) : [
+            { nama: "Toko Kenzie", alamat: "Pare, Kediri", keterangan: "Variasi Motor", lat: -7.776, lng: 112.198 }
+        ];
+    }
+    
+    function saveToStorage() { localStorage.setItem('sensusJatimSatelit', JSON.stringify(dataStore)); }
+
+    function renderTable() {
+        const term = currentSearchTerm.toLowerCase();
+        const filtered = dataStore.filter(i => i.nama.toLowerCase().includes(term) || i.alamat.toLowerCase().includes(term));
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = filtered.map((item, idx) => `
+            <tr>
+                <td>${idx + 1}</td>
+                <td>${item.nama}</td>
+                <td>${item.alamat}</td>
+                <td>${item.keterangan || '-'}</td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="openEditModal(${dataStore.indexOf(item)})">✏️</button>
+                    <button class="action-btn navigate-btn" onclick="window.open('https://www.google.com/maps?q=${item.lat},${item.lng}')">🧭</button>
+                    <button class="action-btn delete-btn" onclick="deleteData(${dataStore.indexOf(item)})">🗑️</button>
+                </td>
+            </tr>`).join('');
+        document.getElementById('displayCount').innerText = filtered.length;
+        document.getElementById('totalCount').innerText = dataStore.length;
+    }
+
+    function openAddModal() {
+        editIndex = -1;
+        document.getElementById('modalTitle').innerText = '➕ Tambah Data';
+        ['inputNama', 'inputAlamat', 'inputKeterangan', 'inputLat', 'inputLng'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('memberSection').style.display = 'none';
+        document.getElementById('modal').style.display = 'block';
+        setTimeout(() => modalMap.invalidateSize(), 200);
+    }
+
+    function openEditModal(index) {
+        editIndex = index;
+        const item = dataStore[index];
+        document.getElementById('inputNama').value = item.nama;
+        document.getElementById('inputAlamat').value = item.alamat;
+        document.getElementById('inputKeterangan').value = item.keterangan;
+        document.getElementById('inputLat').value = item.lat;
+        document.getElementById('inputLng').value = item.lng;
+        document.getElementById('modal').style.display = 'block';
+        document.getElementById('memberSection').style.display = 'block';
+        setTimeout(() => {
+            modalMap.invalidateSize();
+            modalMap.setView([item.lat, item.lng], 17);
+            modalMarker.setLatLng([item.lat, item.lng]);
+        }, 200);
+    }
+
+    function saveData() {
+        const item = {
+            nama: document.getElementById('inputNama').value,
+            alamat: document.getElementById('inputAlamat').value,
+            keterangan: document.getElementById('inputKeterangan').value,
+            lat: parseFloat(document.getElementById('inputLat').value),
+            lng: parseFloat(document.getElementById('inputLng').value)
+        };
+        if (!item.nama || !item.alamat) return alert('Nama dan Alamat wajib diisi!');
+        if (editIndex === -1) dataStore.push(item); else dataStore[editIndex] = item;
+        saveToStorage(); closeModal(); renderTable();
+    }
+
+    function deleteData(index) { if (confirm('Hapus data?')) { dataStore.splice(index, 1); saveToStorage(); renderTable(); } }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function quickSearch() { currentSearchTerm = document.getElementById('searchInput').value; renderTable(); }
+    function clearSearch() { document.getElementById('searchInput').value = ''; quickSearch(); }
+    function toggleBulkMode() { const a = document.getElementById('bulkArea'); a.style.display = a.style.display === 'none' ? 'block' : 'none'; }
+    
+    function exportData() {
+        const blob = new Blob([JSON.stringify(dataStore, null, 2)], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sensus_jatim.json'; a.click();
+    }
+
+    function importData() {
+        const input = document.createElement('input'); input.type = 'file';
+        input.onchange = e => {
+            const reader = new FileReader();
+            reader.onload = evt => { dataStore.push(...JSON.parse(evt.target.result)); saveToStorage(); renderTable(); };
+            reader.readAsText(e.target.files[0]);
+        };
+        input.click();
+    }
+
+    // Init
+    window.onload = () => {
+        loadDataFromStorage();
+        renderTable();
+        initModalMap();
+        document.getElementById('geocodeModalBtn').onclick = geocodeAddress;
+        document.getElementById('currentLocationBtn').onclick = getCurrentLocation;
+    };
+    window.onclick = e => { if (e.target.className === 'modal') closeModal(); };
+</script>
+
+</body>
+</html>
